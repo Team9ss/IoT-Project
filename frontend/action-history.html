@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="ICON" href="img/iot.png" type="x-icon" />
+    <title>IOT - Action History</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- =============== Navigation ================ -->
+    <div class="container">
+
+        <div id="1"></div>
+        <script>
+          load("navigator.html");
+          function load(url) {
+            req = new XMLHttpRequest();
+            req.open("GET", url, false);
+            req.send(null);
+            document.getElementById(1).innerHTML = req.responseText;
+          }
+        </script>
+
+        <!-- ========================= Main ==================== -->
+        <div class="main">
+            <div class="topbar">
+                <div class="toggle">
+                    <ion-icon name="menu-outline"></ion-icon>
+                </div>
+
+                <div class="top-name">
+                    <h1>Action History</h1>
+                </div>
+
+                <div class="user">
+                    <a href="profile.html">
+                        <img src="img/admin.png" alt="">
+                    </a>
+                </div>
+            </div>
+
+
+
+            <!-- ================ Recent Data ================= -->
+            <div class="details">
+                <div class="recentData">
+                    <div class="cardHeader">
+                        <h2>Recent Data</h2>
+                        <div class="search">
+                            <label>
+                                <input type="text" placeholder="Find...">
+                                <ion-icon name="search-outline"></ion-icon>
+                            </label>
+                        </div>
+                        <div class="sort">
+                            <ion-icon name="swap-vertical-outline"></ion-icon>
+                            <select class="sort-bar">
+                                <option value="" disabled selected hidden>Sort by...</option>
+                                <option value="tao">Sort by ID</option>
+                                <option value="cam">Sort by Device</option>
+                                <option value="cam">Sort by Action</option>
+                                <option value="chuoi">Sort by Date</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <td>ID</td>
+                                <td>Device</td>
+                                <td>Action</td>
+                                <td>Date</td>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>Fan</td>
+                                <td>ON</td>
+                                <td>26/1/2024 17:31:23</td>
+                            </tr>
+
+                            <tr>
+                                <td>2</td>
+                                <td>Light</td>
+                                <td>ON</td>
+                                <td>26/1/2024 17:31:15</td>
+                            </tr>
+
+                            <tr>
+                                <td>3</td>
+                                <td>Fan</td>
+                                <td>OFF</td>
+                                <td>26/1/2024 12:34:51</td>
+                            </tr>
+
+                            <tr>
+                                <td>4</td>
+                                <td>Fan</td>
+                                <td>ON</td>
+                                <td>25/1/2024 12:01:17</td>
+                            </tr>
+
+                            <tr>
+                                <td>5</td>
+                                <td>Fan</td>
+                                <td>OFF</td>
+                                <td>26/1/2024 07:47:33</td>
+                            </tr>
+
+                            <tr>
+                                <td>6</td>
+                                <td>Fan</td>
+                                <td>ON</td>
+                                <td>26/1/2024 07:15:03</td>
+                            </tr>
+
+                            <tr>
+                                <td>7</td>
+                                <td>Light</td>
+                                <td>OFF</td>
+                                <td>25/1/2024 23:11:40</td>
+                            </tr>
+
+                            <tr>
+                                <td>8</td>
+                                <td>Fan</td>
+                                <td>OFF</td>
+                                <td>25/1/2024 23:11:30</td>
+                            </tr>
+
+                            <tr>
+                                <td>9</td>
+                                <td>Light</td>
+                                <td>ON</td>
+                                <td>25/1/2024 17:31:40</td>
+                            </tr>
+
+                            <tr>
+                                <td>10</td>
+                                <td>Fan</td>
+                                <td>ON</td>
+                                <td>25/1/2024 17:31:23</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <ul class="pagination">
+                    <li><u>1</u></li>
+                    <li>2</li>
+                    <li>3</li>
+                    <li>4</li>
+                    <li>5</li>
+                    <li>...</li>
+                    <li>10</li>
+                  </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========== Scripts =========  -->
+    <script src="scripts.js"></script>
+
+    <!-- ====== ionicons ======= -->
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+</body>
+
+</html>

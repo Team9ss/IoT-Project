@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="ICON" href="img/iot.png" type="x-icon" />
+    <title>IOT - Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
+</head>
+
+<body>
+    <!-- =============== Navigation ================ -->
+    <div class="container">
+        <div id="1"></div>
+        <script>
+          load("navigator.html");
+          function load(url) {
+            req = new XMLHttpRequest();
+            req.open("GET", url, false);
+            req.send(null);
+            document.getElementById(1).innerHTML = req.responseText;
+          }
+        </script>
+
+        <!-- ========================= Main ==================== -->
+        <div class="main">
+            <div class="topbar">
+                <div class="toggle">
+                    <ion-icon name="menu-outline"></ion-icon>
+                </div>
+
+                <div class="top-name">
+                    <h1>IOT Dashboard</h1>
+                </div>
+
+
+                <div class="user">
+                    <a href="profile.html">
+                        <img src="img/admin.png" alt="">
+                    </a>
+                </div>
+            </div>
+
+            <!-- ======================= Temp/Humid/Light ================== -->
+            <div class="cardBox">
+                <div class="card" id="temperatureColor">
+                    <div>
+                        <div class="numbers" id="temperatureValue">0°C</div>
+                        <div class="cardName">Temperature</div>
+                    </div>
+
+                    <div class="iconBx">
+                        <ion-icon name="thermometer-outline"></ion-icon>
+                    </div>
+                </div>
+
+                <div class="card" id="humidityColor">
+                    <div>
+                        <div class="numbers" id="humidityValue">0%</div>
+                        <div class="cardName">Humidity</div>
+                    </div>
+
+                    <div class="iconBx">
+                        <ion-icon name="water-outline"></ion-icon>
+                    </div>
+                </div>
+
+                <div class="card" id="lightColor">
+                    <div>
+                        <div class="numbers" id="lightValue">0 LUX</div>
+                        <div class="cardName">Light</div>
+                    </div>
+
+                    <div class="iconBx">
+                        <ion-icon name="sunny-outline"></ion-icon>
+                    </div>
+                </div>
+
+
+            </div>
+
+            <!-- ================ Chart ================= -->
+            <div class="chart-container">
+                <div class="chart">                    
+                    <canvas id="chartInformation" display="none"></canvas>
+                </div>
+
+                <!-- ================= Fan/Light ================ -->
+                
+                        <div class="device">
+                            <div class="light">
+                                <img id="lightBulb" src="img/lighton.png">
+                                <br>
+                                <button id="lightButton" class="toggle-btn">ON</button>
+                            </div>
+                            
+                            <div class="fan">
+                                <img id="fan" src="img/fanon.gif">
+                                <br>
+                                <button id="fanButton" class="toggle-btn">ON</button>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========== Scripts =========  -->
+    <script src="admin.js"></script>
+    <script src="scripts.js"></script>
+
+    <!-- ====== ionicons ======= -->
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+</body>
+
+</html>
