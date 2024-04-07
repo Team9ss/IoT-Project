@@ -1,5 +1,5 @@
 # IoT-Project
-Đây là 1 dự án IoT kiểm soát trạng thái trong phòng sử dụng vi điều khiển ESP8266 để giám sát nhiệt độ, độ ẩm, mức độ ánh sáng và kiểm soát bật/tắt đèn và quạt.
+Đây là 1 dự án IoT kiểm soát trạng thái trong phòng sử dụng vi điều khiển ESP8266 để giám sát nhiệt độ, độ ẩm, mức độ ánh sáng và kiểm soát việc bật/tắt đèn và quạt. Front-end được xây dựng bằng HTML, CSS và JavaScript, còn Backend sử dụng NodeJS và MySQL.
 
 ## Hướng dẫn cài đặt
 
@@ -45,6 +45,7 @@ node main.js
 ```
 
 Sau đó Server sẽ được khởi chạy. Truy cập vào http://localhost:2002/api-docs/ để xem apidocs của Server.
+
 ![Swagger](./swagger.png)
 
 ## Tác giả
