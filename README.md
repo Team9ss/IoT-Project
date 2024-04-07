@@ -46,7 +46,7 @@ node main.js
 
 Sau đó Server sẽ được khởi chạy. Truy cập vào http://localhost:2002/api-docs/ để xem apidocs của Server.
 
-![Swagger](./swagger.png)
+![Apidocs](./apidocs.png)
 
 ## Tác giả
 - Nguyễn Quang Huy
