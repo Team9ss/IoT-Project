@@ -74,6 +74,17 @@
                 "type": "string",
                 "enum": ["ASC", "DESC"]
               }
+            },
+            {
+              "name": "pageSize",
+              "in": "query",
+              "description": "The number of items per page",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "minimum": "1",
+                "default": "10"
+              }
             }
           ],
           "responses": {
@@ -121,6 +132,17 @@
               "required": false,
               "schema": {
                 "type": "string"
+              }
+            },
+            {
+              "name": "pageSize",
+              "in": "query",
+              "description": "The number of items per page",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "minimum": "1",
+                "default": "10"
               }
             }
           ],
@@ -260,9 +282,9 @@
           "parameters": [
             {
               "name": "page",
-              "in": "query",
+              "in": "path",
               "description": "Page number",
-              "required": false,
+              "required": true,
               "schema": {
                 "type": "integer"
               }
@@ -275,6 +297,17 @@
               "schema": {
                 "type": "string",
                 "enum": ["Device", "Action", "created_at", "all"]
+              }
+            },
+            {
+              "name": "pageSize",
+              "in": "query",
+              "description": "The number of items per page",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "minimum": "1",
+                "default": "10"
               }
             }
           ],
@@ -324,6 +357,17 @@
               "required": false,
               "schema": {
                 "type": "string"
+              }
+            },
+            {
+              "name": "pageSize",
+              "in": "query",
+              "description": "The number of items per page",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "minimum": "1",
+                "default": "10"
               }
             }
           ],
