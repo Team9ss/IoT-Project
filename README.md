@@ -11,13 +11,7 @@ git clone https://github.com/Team9ss/IoT-Project.git
 
 ### Bước 2 : Cài đặt thư viện
 
-Cài đặt thư viện bằng cách trỏ đến thư mục:
-
-```
-cd backend
-```
-
-Sau đó thực hiện lệnh sau, hệ thống sẽ tự động tải xuống các thư viện cần thiết ở package.json.
+Cài đặt thư viện bằng cách thực hiện lệnh sau, hệ thống sẽ tự động tải xuống các thư viện cần thiết ở package.json.
 
 ```
 npm install
