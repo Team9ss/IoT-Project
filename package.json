@@ -1,10 +1,10 @@
 {
   "name": "iot-final",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "iot website by NguyenQuangHuy",
+  "main": "main.js",
   "scripts": {
-    "dev": "C:\\Users\\Admin\\Desktop\\iotfinal\\index.js"
+    "start": "node backend/main.js"
   },
   "keywords": [],
   "author": "",
