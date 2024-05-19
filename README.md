@@ -38,9 +38,12 @@ Dự án sẽ được chạy bằng lệnh:
 npm start
 ```
 
-Sau đó Server sẽ được khởi chạy. Truy cập vào http://localhost:2002/api-docs/ để xem apidocs của Server.
+Sau đó Server sẽ được khởi chạy. Mở tệp index.html và khởi chạy Live Server. Sau khi chạy dự án sẽ có giao diện như sau:
 
-![Apidocs](./apidocs.png)
+![Index](./index.png)
+![Sensor](./data-sensor.png)
+![Action](./action-history.png)
+![Profile](./profile.png)
 
 ## Tác giả
 - Nguyễn Quang Huy
@@ -52,4 +55,4 @@ Sau đó Server sẽ được khởi chạy. Truy cập vào http://localhost:20
 - Cài đặt MQTT: [Mosquitto](https://mosquitto.org/download/)
 - Cài đặt Nodejs: [Nodejs](https://nodejs.org/en).
 - Kiến thức về lắp đặt phần cứng: [Youtube](https://youtu.be/qdxKUQEgDNE?si=jq4B2je0GqNbf6Yp)
-- Kiến thức về Swagger: [Swagger](https://swagger.io/docs/)
+
