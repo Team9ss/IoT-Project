@@ -8,8 +8,8 @@
 #define dhtpin D4
 #define ldrpin  A0
 // WiFi
-const char *ssid = "Congvnpt";       // Enter your WiFi name
-const char *password = "bibu12345";  // Enter WiFi password
+const char *ssid = "yourwifi";       // Enter your WiFi name
+const char *password = "yourpass";  // Enter WiFi password
 int ldrValue; 
 // MQTT Broker
 const char *mqtt_broker = "192.168.100.14";
