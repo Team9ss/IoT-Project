@@ -41,7 +41,7 @@ var mysqlConfig = {
 Dự án sẽ được chạy bằng lệnh:
 
 ```
-node main.js
+npm start
 ```
 
 Sau đó Server sẽ được khởi chạy. Truy cập vào http://localhost:2002/api-docs/ để xem apidocs của Server.
