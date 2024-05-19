@@ -12,7 +12,7 @@ const char *ssid = "yourwifi";       // Enter your WiFi name
 const char *password = "yourpass";  // Enter WiFi password
 int ldrValue; 
 // MQTT Broker
-const char *mqtt_broker = "192.168.100.14";
+const char *mqtt_broker = "yourIP";  // Enter your IP name
 const char *topicSensor = "sensor";
 const char *topicled = "led";
 const char *topicfan = "fan";
