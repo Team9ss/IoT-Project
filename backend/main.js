@@ -1,75 +1,93 @@
 const express = require('express');
+const cors = require('cors');
 const app = express();
-const swaggerUI = require('swagger-ui-express');
-const swaggerDocument = require('./swagger.json'); // Import tài liệu OpenAPI từ file swagger.json
-const pool  = require('./connectDB');
 const req = require('express/lib/request');
+const { mqttClient } = require("./mqtt");
+const { pool } = require("./mqtt");
 app.use(express.json());
-// Sử dụng tài liệu OpenAPI
-app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument));
-// Sử dụng tài liệu OpenAPI
+app.use(cors());
+
+
+app.get("/dash_board/check_device_status", (req, res) => {
+    // Truy vấn trạng thái của FAN
+    pool.query(
+        "SELECT * FROM device_actions WHERE Device = 'FAN' ORDER BY created_at DESC LIMIT 1",
+        (error, fanResults) => {
+            if (error) {
+                console.error("Error querying database:", error);
+                res.status(500).json({ error: "Internal Server Error" });
+                return;
+            }
+
+            // Truy vấn trạng thái của LED
+            pool.query(
+                "SELECT * FROM device_actions WHERE Device = 'LED' ORDER BY created_at DESC LIMIT 1",
+                (error, ledResults) => {
+                    if (error) {
+                        console.error("Error querying database:", error);
+                        res.status(500).json({ error: "Internal Server Error" });
+                        return;
+                    }
+
+                    const response = {};
+
+                    if (fanResults.length > 0) {
+                        response.FAN = fanResults[0];
+                    }
+                    if (ledResults.length > 0) {
+                        response.LED = ledResults[0];
+                    }
+
+                    if (Object.keys(response).length === 0) {
+                        res.status(404).send("No data found");
+                    } else {
+                        res.json(response);
+                    }
+                }
+            );
+        }
+    );
+});
 
 
 
-app.get('/dasboard/all',(req,res) =>{
-    const query = 'SELECT * FROM dashboard';
+app.post("/dash_board/led_control/:action", (req, res) => {
+    const action = req.params.action;
+    mqttClient.publish("led", action);
+    res.status(200).json("LED: " + action);
+});
+
+
+app.post("/dash_board/fan_control/:action", (req, res) => {
+    const action = req.params.action;
+    mqttClient.publish("fan", action);
+    res.status(200).json("FAN: " + action);
+});
+
+app.post("/dash_board/both_control/:action", (req, res) => {
+    const action = req.params.action;
+    mqttClient.publish("fan", action);
+    res.status(200).json("FAN: " + action);
+});
+
+app.get('/dashboard/all', (req, res) => {
+    const query = 'SELECT * FROM sensor_data ORDER BY created_at DESC LIMIT 1';
 
     // Thực hiện truy vấn vào cơ sở dữ liệu
     pool.query(query, (error, results, fields) => {
-      if (error) {
-        console.error('Error querying database:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
-        return;
-      }
-  
-      // Kiểm tra xem có dữ liệu trả về hay không
-      if (results.length === 0) {
-        res.status(404).send('Không có dữ liệu');
-        return;
-      }
-  
-      // Trả về dữ liệu như JSON
-      res.json(results);
-    });
-});
-
-app.get('/data_sensor/all', (req, res) => {
-    let { page, pageSize } = req.query; // Lấy trang và kích thước trang từ query string
-    page = page ? parseInt(page) : 1; // Chuyển đổi trang và kích thước trang sang số nguyên, mặc định là 1 và 10 nếu không có giá trị
-    pageSize = pageSize ? parseInt(pageSize) : 10; 
-    const offset = (page - 1) * pageSize;  // Tính offset (số lượng bỏ qua dữ liệu)
-
-    // Thiết lập trường và thứ tự sắp xếp mặc định nếu không được chỉ định
-    let sortField = req.query.sort || 'id'; 
-    let sortOrder = req.query.order || 'ASC'; 
-
-    // Xây dựng truy vấn SQL cơ bản
-    let query = 'SELECT * FROM sensor_data';
-
-    // Thêm điều kiện sắp xếp nếu không sắp xếp theo tất cả các trường
-    if (sortField !== 'all') {
-        query += ` ORDER BY ${sortField} ${sortOrder}`;
-    }
-
-    // Thêm điều kiện phân trang nếu page không phải là 'all'
-    if (page !== 'all') {
-        query += ' LIMIT ? OFFSET ?';
-    }
-
-    // Thực thi truy vấn SQL, truyền tham số phân trang nếu có
-    pool.query(query, (page !== 'all') ? [pageSize, offset] : [], (error, results, fields) => {
         if (error) {
-            // Xử lý lỗi truy vấn
             console.error('Error querying database:', error);
             res.status(500).json({ error: 'Internal Server Error' });
             return;
         }
+
+        // Kiểm tra xem có dữ liệu trả về hay không
         if (results.length === 0) {
-            // Trả về mã trạng thái 404 nếu không có dữ liệu được tìm thấy
-            res.status(404).send('Không có data');
+            res.status(404).send('Không có dữ liệu');
             return;
         }
-        // Trả về dữ liệu nếu tìm thấy
+
+        // Trả về dữ liệu như JSON
         res.json(results);
     });
 });
@@ -77,334 +95,134 @@ app.get('/data_sensor/all', (req, res) => {
 
 
 
+app.get("/action_history", (req, res) => {
+    // Phân tích các tham số truy vấn cho phân trang, sắp xếp và tìm kiếm
+    const perPage = parseInt(req.query.pageSize) || 10;  // Số lượng bản ghi mỗi trang, mặc định là 10
+    const page = parseInt(req.query.page) || 1;          // Số trang hiện tại, mặc định là 1
+    const sortField = req.query.sortField || "id";       // Trường để sắp xếp, mặc định là "id"
+    const sortBy = req.query.sortBy || "ASC";            // Thứ tự sắp xếp, mặc định là tăng dần
+    const keyword = req.query.keyword || "";             // Từ khóa để tìm kiếm, mặc định là rỗng
+    const searchField = req.query.searchField || "all";  // Trường để tìm kiếm, mặc định là "all" (tất cả)
 
-app.get('/data_sensor/search', (req, res) => {
-    let { page, pageSize } = req.query; // Lấy trang và kích thước trang từ query string
-    page = page ? parseInt(page) : 1; // Chuyển đổi trang và kích thước trang sang số nguyên, mặc định là 1 và 10 nếu không có giá trị
-    pageSize = pageSize ? parseInt(pageSize) : 10; 
-    const offset = (page - 1) * pageSize;  // Tính offset (số lượng bỏ qua dữ liệu)
-    let filter = req.query.filter;
-    let value = req.query.value;
+    // Khởi tạo điều kiện tìm kiếm và giá trị cho truy vấn SQL
+    let searchCondition = "";
+    let searchValues = [];
 
-    let query = 'SELECT * FROM sensor_data';
-
-    if (!filter) {
-        filter = 'all'; // Nếu không có bộ lọc, mặc định là 'all'
+    // Nếu tìm kiếm một trường cụ thể và có từ khóa
+    if (searchField !== "all" && keyword.trim() !== "") {
+        searchCondition = ` WHERE ${searchField} LIKE ?`;  // Đặt điều kiện tìm kiếm cho trường cụ thể
+        searchValues = [`%${keyword.trim()}%`];            // Đặt giá trị tìm kiếm với ký tự đại diện cho khớp một phần
+    } else if (searchField === "all" && keyword.trim() !== "") {
+        // Nếu tìm kiếm trên tất cả các trường
+        const columns = ["id", "Device", "action", "created_at"];  // Danh sách các cột để tìm kiếm
+        const conditions = columns.map((column) => `${column} LIKE ?`).join(" OR ");  // Tạo điều kiện tìm kiếm cho tất cả các cột
+        searchCondition = ` WHERE ${conditions}`;  // Đặt điều kiện tìm kiếm cho tất cả các cột
+        searchValues = columns.map(() => `%${keyword.trim()}%`);  // Đặt giá trị tìm kiếm cho tất cả các cột
     }
 
-    if (!value) {
-        value = ''; // Nếu không có giá trị, sử dụng chuỗi trống
-    }
-
-    if (filter === 'all') {
-        query += ` WHERE temperature LIKE '%${value}%' OR humidity LIKE '%${value}%' OR light LIKE '%${value}%' OR created_at LIKE '%${value}%'`;
-    } else if (filter === 'temperature' || filter === 'humidity' || filter === 'light' || filter === 'created_at') {
-        query += ` WHERE ${filter} LIKE '%${value}%'`;
-    }
-
-    
-    if (page !== 'all') {
-        query += ' LIMIT ? OFFSET ?';
-    }
-
-    const params = (page !== 'all') ? [pageSize, offset] : []; // Thêm limit và offset vào mảng tham số nếu page không phải là 'all'
-
-    pool.query(query, params, (error, results, fields) => {
-        if (error) {
-            console.error('Error querying database:', error);
-            res.status(500).json({ error: 'Internal Server Error' });
+    // Truy vấn SQL để đếm tổng số bản ghi khớp với điều kiện tìm kiếm
+    const sql = `SELECT COUNT(*) AS total FROM device_actions ${searchCondition}`;
+    pool.query(sql, searchValues, (err, result) => {
+        if (err) {
+            console.error("Error counting total record", err);  
+            res.status(500).send("Internal Server Error");     
             return;
         }
-        if (results.length === 0) {
-            res.status(404).send('Không có data');
+
+        const totalRecords = result[0].total;                   // Lấy tổng số bản ghi
+        const totalPages = Math.ceil(totalRecords / perPage);   // Tính tổng số trang
+
+        const offset = (page - 1) * perPage;  // Tính toán offset cho phân trang
+
+        // Truy vấn SQL để lấy dữ liệu thực tế với điều kiện tìm kiếm, sắp xếp và phân trang
+        let dataSql = `SELECT * FROM device_actions ${searchCondition} ORDER BY ${sortField} ${sortBy} LIMIT ?, ?`;
+        let dataValues = [...searchValues, offset, perPage];  // Thêm offset và limit vào giá trị truy vấn
+
+        pool.query(dataSql, dataValues, (err, result) => {
+            if (err) {
+                console.error("Error retrieving device action:", err); 
+                res.status(500).send("Internal Server Error");     
+                return;
+            }
+
+            // Gửi dữ liệu lấy được và thông tin phân trang trong phản hồi
+            res.json({
+                data: result,  // Dữ liệu lấy được
+                pagination: {
+                    currentPage: page,         // Số trang hiện tại
+                    totalPages: totalPages,    // Tổng số trang
+                    hasNextPage: page < totalPages,  // Có trang tiếp theo không
+                    hasPrevPage: page > 1,          // Có trang trước đó không
+                },
+            });
+        });
+    });
+});
+
+
+app.get("/data_sensor", (req, res) => {
+    // Phân tích các tham số truy vấn cho phân trang, sắp xếp và tìm kiếm
+    const perPage = parseInt(req.query.pageSize) || 10;  // Số lượng bản ghi mỗi trang, mặc định là 10
+    const page = parseInt(req.query.page) || 1;          // Số trang hiện tại, mặc định là 1
+    const sortField = req.query.sortField || "id";       // Trường để sắp xếp, mặc định là "id"
+    const sortBy = req.query.sortBy || "ASC";            // Thứ tự sắp xếp, mặc định là tăng dần
+    const keyword = req.query.keyword || "";             // Từ khóa để tìm kiếm, mặc định là rỗng
+    const searchField = req.query.searchField || "all";  // Trường để tìm kiếm, mặc định là "all" (tất cả)
+
+    // Khởi tạo điều kiện tìm kiếm và giá trị cho truy vấn SQL
+    let searchCondition = "";
+    let searchValues = [];
+
+    // Nếu tìm kiếm một trường cụ thể và có từ khóa
+    if (searchField !== "all" && keyword.trim() !== "") {
+        searchCondition = ` WHERE ${searchField} LIKE ?`;  // Đặt điều kiện tìm kiếm cho trường cụ thể
+        searchValues = [`%${keyword.trim()}%`];            // Đặt giá trị tìm kiếm với ký tự đại diện cho khớp một phần
+    } else if (searchField === "all" && keyword.trim() !== "") {
+        // Nếu tìm kiếm trên tất cả các trường
+        const columns = ["id", "temperature", "humidity", "light", "created_at"];  // Danh sách các cột để tìm kiếm
+        const conditions = columns.map((column) => `${column} LIKE ?`).join(" OR ");  // Tạo điều kiện tìm kiếm cho tất cả các cột
+        searchCondition = ` WHERE ${conditions}`;  // Đặt điều kiện tìm kiếm cho tất cả các cột
+        searchValues = columns.map(() => `%${keyword.trim()}%`);  // Đặt giá trị tìm kiếm cho tất cả các cột
+    }
+
+    // Truy vấn SQL để đếm tổng số bản ghi khớp với điều kiện tìm kiếm
+    const sql = `SELECT COUNT(*) AS total FROM sensor_data ${searchCondition}`;
+    pool.query(sql, searchValues, (err, result) => {
+        if (err) {
+            console.error("Error counting total record", err); 
+            res.status(500).send("Internal Server Error"); 
             return;
         }
-        res.json(results); // Trả về kết quả dữ liệu dưới dạng JSON
-    });
-}); 
 
-// Xử lý route POST '/data_sensor/addData'
-app.post('/data_sensor/addData', (req, res) => {
-    // Lấy dữ liệu từ request body gửi từ client
-    const { temperature, humidity, light } = req.body;
-    
-    // Kiểm tra xem các trường temperature, humidity, light có tồn tại không
-    if (!temperature || !humidity || !light) {
-        // Nếu không tồn tại, trả về lỗi và mã trạng thái 400 (Bad Request)
-        return res.status(400).json({ error: 'Temperature, humidity, and light are required' });
-    }
+        const totalRecords = result[0].total;                   // Lấy tổng số bản ghi
+        const totalPages = Math.ceil(totalRecords / perPage);   // Tính tổng số trang
 
-    // Tạo câu truy vấn SQL để chèn dữ liệu vào bảng sensor_data với các tham số thay thế (?)
-    const query = 'INSERT INTO sensor_data (temperature, humidity, light, created_at) VALUES (?, ?, ?, NOW())';
+        const offset = (page - 1) * perPage;  // Tính toán offset cho phân trang
 
-    // Thực thi câu truy vấn SQL với các giá trị thay thế được cung cấp
-    pool.query(query, [temperature, humidity, light], (error, results, fields) => {
-        // Kiểm tra xem có lỗi trong quá trình thực thi câu truy vấn không
-        if (error) {
-            // Nếu có lỗi, hiển thị thông báo lỗi và trả về mã trạng thái 500 (Internal Server Error)
-            console.error('Error querying database:', error);
-            return res.status(500).json({ error: 'Internal Server Error' });
-        }
-        // Nếu không có lỗi, trả về mã trạng thái 201 (Created) và thông báo thành công
-        res.status(201).json({ message: 'Data added successfully' });
-    });
-});
+        // Truy vấn SQL để lấy dữ liệu thực tế với điều kiện tìm kiếm, sắp xếp và phân trang
+        let dataSql = `SELECT * FROM sensor_data ${searchCondition} ORDER BY ${sortField} ${sortBy} LIMIT ?, ?`;
+        let dataValues = [...searchValues, offset, perPage];  // Thêm offset và limit vào giá trị truy vấn
 
+        pool.query(dataSql, dataValues, (err, result) => {
+            if (err) {
+                console.error("Error retrieving sensor data", err);
+                res.status(500).send("Internal Server Error");    
+                return;
+            }
 
-// Xử lý route PUT '/data_sensor/:id'
-app.put('/data_sensor/:id', (req, res) => {
-    // Lấy ID từ đường dẫn của request
-    const { id } = req.params;
-    // Lấy dữ liệu cập nhật từ request body
-    const { temperature, humidity, light } = req.body;
-
-    // Kiểm tra xem ít nhất một trường (temperature, humidity, light) có được cung cấp không
-    if (!temperature && !humidity && !light) {
-        // Nếu không có trường nào được cung cấp, trả về lỗi và mã trạng thái 400 (Bad Request)
-        return res.status(400).json({ error: 'At least one field (temperature, humidity, light) must be provided for update' });
-    }
-
-    // Tạo một đối tượng chứa các trường cần cập nhật
-    const updateFields = {};
-    if (temperature) updateFields.temperature = temperature;
-    if (humidity) updateFields.humidity = humidity;
-    if (light) updateFields.light = light;
-
-    // Tạo câu truy vấn SQL để cập nhật dữ liệu trong bảng sensor_data với các trường được cung cấp
-    const query = 'UPDATE sensor_data SET ? WHERE id = ?';
-
-    // Thực thi câu truy vấn SQL với các giá trị thay thế được cung cấp
-    pool.query(query, [updateFields, id], (error, results, fields) => {
-        // Kiểm tra xem có lỗi trong quá trình thực thi câu truy vấn không
-        if (error) {
-            // Nếu có lỗi, hiển thị thông báo lỗi và trả về mã trạng thái 500 (Internal Server Error)
-            console.error('Error querying database:', error);
-            return res.status(500).json({ error: 'Internal Server Error' });
-        }
-
-        // Kiểm tra xem có dữ liệu nào được cập nhật không
-        if (results.affectedRows === 0) {
-            // Nếu không có dữ liệu nào được cập nhật, trả về lỗi và mã trạng thái 404 (Not Found)
-            return res.status(404).json({ error: 'Data not found' });
-        }
-
-        // Nếu dữ liệu được cập nhật thành công, trả về mã trạng thái 200 (OK) và thông báo thành công
-        res.status(200).json({ message: 'Data updated successfully' });
+            // Gửi dữ liệu lấy được và thông tin phân trang trong phản hồi
+            res.json({
+                data: result,  // Dữ liệu lấy được
+                pagination: {
+                    currentPage: page,         // Số trang hiện tại
+                    totalPages: totalPages,    // Tổng số trang
+                    hasNextPage: page < totalPages,  // Có trang tiếp theo không
+                    hasPrevPage: page > 1,          // Có trang trước đó không
+                },
+            });
+        });
     });
 });
-
-
-
-app.delete('/data_sensor/:id', (req, res) => {
-    // Lấy ID từ đường dẫn của request
-    const { id } = req.params;
-
-    // Tạo câu truy vấn SQL để xóa dữ liệu trong bảng sensor_data dựa trên ID
-    const query = 'DELETE FROM sensor_data WHERE id = ?';
-
-    // Thực thi câu truy vấn SQL với giá trị thay thế là ID của dữ liệu cần xóa
-    pool.query(query, id, (error, results, fields) => {
-        // Kiểm tra xem có lỗi trong quá trình thực thi câu truy vấn không
-        if (error) {
-            // Nếu có lỗi, hiển thị thông báo lỗi và trả về mã trạng thái 500 (Internal Server Error)
-            console.error('Error querying database:', error);
-            return res.status(500).json({ error: 'Internal Server Error' });
-        }
-
-        // Kiểm tra xem có dữ liệu nào bị ảnh hưởng (đã bị xóa) không
-        if (results.affectedRows === 0) {
-            // Nếu không có dữ liệu nào bị ảnh hưởng, trả về lỗi và mã trạng thái 404 (Not Found)
-            return res.status(404).json({ error: 'Data not found' });
-        }
-
-        // Nếu dữ liệu được xóa thành công, trả về mã trạng thái 200 (OK) và thông báo thành công
-        res.status(200).json({ message: 'Data deleted successfully' });
-    });
-});
-
-
-app.get('/action_history/all', (req, res) => {
-    let { page, pageSize } = req.query; // Lấy trang và kích thước trang từ query string
-    page = page ? parseInt(page) : 1; // Chuyển đổi trang và kích thước trang sang số nguyên, mặc định là 1 và 10 nếu không có giá trị
-    pageSize = pageSize ? parseInt(pageSize) : 10; 
-    const offset = (page - 1) * pageSize;  // Tính offset (số lượng bỏ qua dữ liệu)
-    let sortField = req.query.sort || 'id'; // Mặc định sắp xếp theo id nếu không có trường sắp xếp được chỉ định
-    let query = 'SELECT * FROM device_actions';
-
-    // Thêm điều kiện sắp xếp theo Device
-    if (sortField === 'Device') {
-      query += ' ORDER BY CASE WHEN Device = "LED" THEN 1 ELSE 2 END, id'; // Mặc định sắp xếp theo LED trước và FAN sau
-    }
-  
-    // Thêm điều kiện sắp xếp theo Action
-    if (sortField === 'Action') {
-      query += ' ORDER BY CASE WHEN Action = "off" THEN 1 ELSE 2 END, id'; // Mặc định sắp xếp 'on' trước và 'off' sau
-    }
-
-    // Thêm điều kiện sắp xếp theo created_at
-    if (sortField === 'created_at') {
-      query += ' ORDER BY created_at, id'; // Mặc định sắp xếp theo created_at nếu không có lựa chọn được chỉ định
-    }
-  
-    // Thêm điều kiện phân trang nếu page không phải là 'all'
-    if (page !== 'all') {
-      query += ' LIMIT ? OFFSET ?';
-    }
-  
-    // Thực thi truy vấn
-    pool.query(query, (page !== 'all') ? [pageSize, offset] : [], (error, results, fields) => {
-      if (error) {
-        console.error('Error querying database:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
-        return;
-      }
-      if (results.length === 0) {
-        res.status(404).send('No data found');
-        return;
-      }
-      res.json(results);
-    });
-});
-
-
-app.get('/action_history/search', (req, res) => {
-    let { page, pageSize } = req.query; // Lấy trang và kích thước trang từ query string
-    page = page ? parseInt(page) : 1; // Chuyển đổi trang và kích thước trang sang số nguyên, mặc định là 1 và 10 nếu không có giá trị
-    pageSize = pageSize ? parseInt(pageSize) : 10; 
-    const offset = (page - 1) * pageSize;  // Tính offset (số lượng bỏ qua dữ liệu)
-    let filter = req.query.filter;
-    let value = req.query.value;
-
-    let query = 'SELECT * FROM device_actions';
-
-    // Kiểm tra các điều kiện filter và value để thêm vào câu truy vấn SQL
-    if (!filter || !value) {
-        query += '';
-    } else if (filter === 'all' ) {
-        query += ` WHERE Device LIKE '%${value}%' OR action LIKE '%${value}%' `;
-    } else if (filter === 'device' && (value.toLowerCase() === 'led' || value.toLowerCase() === 'fan')) {
-        query += ` WHERE Device LIKE '%${value}%'`;
-    } else if (filter === 'action' && (value.toLowerCase() === 'on' || value.toLowerCase() === 'off')) {
-        query += ` WHERE action LIKE '%${value}%'`;
-    }
-
-    if (page !== 'all') {
-        query += ' LIMIT ? OFFSET ?';
-    }
-
-    const params = (page !== 'all') ? [pageSize, offset] : []; // Thêm limit và offset vào mảng tham số nếu page không phải là 'all'
-
-    pool.query(query, params, (error, results, fields) => {
-        if (error) {
-            console.error('Error querying database:', error);
-            res.status(500).json({ error: 'Internal Server Error' });
-            return;
-        }
-        if (results.length === 0) {
-            res.status(404).send('Không có data');
-            return;
-        }
-        res.json(results);
-    });
-});
-
-
-app.post('/action_history/addData', (req, res) => {
-    // Lấy dữ liệu từ request body gửi từ client
-    const { Device, action } = req.body;
-    
-    // Kiểm tra xem trường Device và action có tồn tại không
-    if (!Device || !action) {
-        // Nếu không tồn tại, trả về lỗi và mã trạng thái 400 (Bad Request)
-        return res.status(400).json({ error: 'Device and action are required' });
-    }
-
-    // Tạo câu truy vấn SQL để chèn dữ liệu vào bảng device_actions với các tham số thay thế (?)
-    const query = 'INSERT INTO device_actions (Device, action, created_at) VALUES (?, ?, NOW())';
-
-    // Thực thi câu truy vấn SQL với các giá trị thay thế được cung cấp
-    pool.query(query, [Device, action], (error, results, fields) => {
-        // Kiểm tra xem có lỗi trong quá trình thực thi câu truy vấn không
-        if (error) {
-            // Nếu có lỗi, hiển thị thông báo lỗi và trả về mã trạng thái 500 (Internal Server Error)
-            console.error('Error querying database:', error);
-            return res.status(500).json({ error: 'Internal Server Error' });
-        }
-        // Nếu không có lỗi, trả về mã trạng thái 201 (Created) và thông báo thành công
-        res.status(201).json({ message: 'Data added successfully' });
-    });
-});
-
-
-app.put('/action_history/:id', (req, res) => {
-    // Lấy ID từ đường dẫn của request
-    const { id } = req.params;
-    // Lấy dữ liệu cập nhật từ request body
-    const { device, action } = req.body;
-
-    // Kiểm tra xem ít nhất một trường (device, action) đã được cung cấp để cập nhật không
-    if (!device && !action) {
-        // Nếu không có trường nào được cung cấp, trả về lỗi và mã trạng thái 400 (Bad Request)
-        return res.status(400).json({ error: 'At least one field (device, action) must be provided for update' });
-    }
-
-    // Tạo một đối tượng chứa các trường cần cập nhật
-    const updateFields = {};
-    if (device) updateFields.device = device;
-    if (action) updateFields.action = action;
-
-    // Tạo câu truy vấn SQL để cập nhật dữ liệu trong bảng device_actions với các trường được cung cấp
-    const query = 'UPDATE device_actions SET ? WHERE id = ?';
-
-    // Thực thi câu truy vấn SQL với các giá trị thay thế là đối tượng updateFields và ID của dữ liệu cần cập nhật
-    pool.query(query, [updateFields, id], (error, results, fields) => {
-        // Kiểm tra xem có lỗi trong quá trình thực thi câu truy vấn không
-        if (error) {
-            // Nếu có lỗi, hiển thị thông báo lỗi và trả về mã trạng thái 500 (Internal Server Error)
-            console.error('Error querying database:', error);
-            return res.status(500).json({ error: 'Internal Server Error' });
-        }
-
-        // Kiểm tra xem có dữ liệu nào bị ảnh hưởng (đã bị cập nhật) không
-        if (results.affectedRows === 0) {
-            // Nếu không có dữ liệu nào bị ảnh hưởng, trả về lỗi và mã trạng thái 404 (Not Found)
-            return res.status(404).json({ error: 'Data not found' });
-        }
-
-        // Nếu dữ liệu được cập nhật thành công, trả về mã trạng thái 200 (OK) và thông báo thành công
-        res.status(200).json({ message: 'Data updated successfully' });
-    });
-});
-
-
-
-app.delete('/action_history/:id', (req, res) => {
-    // Lấy ID từ đường dẫn của request
-    const { id } = req.params;
-
-    // Tạo câu truy vấn SQL để xóa dữ liệu trong bảng device_actions dựa trên ID
-    const query = 'DELETE FROM device_actions WHERE id = ?';
-
-    // Thực thi câu truy vấn SQL với giá trị thay thế là ID của dữ liệu cần xóa
-    pool.query(query, id, (error, results, fields) => {
-        // Kiểm tra xem có lỗi trong quá trình thực thi câu truy vấn không
-        if (error) {
-            // Nếu có lỗi, hiển thị thông báo lỗi và trả về mã trạng thái 500 (Internal Server Error)
-            console.error('Error querying database:', error);
-            return res.status(500).json({ error: 'Internal Server Error' });
-        }
-
-        // Kiểm tra xem có dữ liệu nào bị ảnh hưởng (đã bị xóa) không
-        if (results.affectedRows === 0) {
-            // Nếu không có dữ liệu nào bị ảnh hưởng, trả về lỗi và mã trạng thái 404 (Not Found)
-            return res.status(404).json({ error: 'Data not found' });
-        }
-
-        // Nếu dữ liệu được xóa thành công, trả về mã trạng thái 200 (OK) và thông báo thành công
-        res.status(200).json({ message: 'Data deleted successfully' });
-    });
-});
-
 
 
 // Khởi động máy chủ
