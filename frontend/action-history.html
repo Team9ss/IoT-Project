@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="ICON" href="img/iot.png" type="x-icon" />
+    <title>IOT - Action History</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+</head>
+
+<body>
+    <!-- =============== Navigation ================ -->
+    <div class="container">
+
+        <div id="1"></div>
+        <script>
+          load("navigator.html");
+          function load(url) {
+            req = new XMLHttpRequest();
+            req.open("GET", url, false);
+            req.send(null);
+            document.getElementById(1).innerHTML = req.responseText;
+          }
+        </script>
+
+        <!-- ========================= Main ==================== -->
+        <div class="main">
+            <div class="topbar">
+                <div class="toggle">
+                    <ion-icon name="menu-outline"></ion-icon>
+                </div>
+
+                <div class="top-name">
+                    <h1>Action History</h1>
+                </div>
+
+                <div class="user">
+                    <a href="profile.html">
+                        <img src="img/admin.png" alt="">
+                    </a>
+                </div>
+            </div>
+
+
+
+            <!-- ================ Recent Data ================= -->
+            <div class="details">
+                <div class="recentData">
+                    <div class="cardHeader">
+                        <h2>Recent Data</h2>
+                        <div class="search">
+                            <label>
+                              <input type="text" id="searchInput" placeholder="Search..." />
+                            </label>
+                        </div>
+                        <button id="searchButton" class="searchButton">Search</button>
+                        <div class="search2">
+                            <select id="searchCategory" class="search-bar">
+                              <option value="" disabled selected hidden>Search by...</option>
+                              <option value="all">All</option>
+                              <option value="id">ID</option>
+                              <option value="Device">Device</option>
+                              <option value="action">Action</option>
+                              <option value="created_at">Date - Time</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    
+                      <table id="dataTable">
+                        <thead>
+                          <tr>
+                            <th class="sortable" data-field="id">ID</th>
+                            <th class="sortable" data-field="Device">Device</th>
+                            <th class="sortable" data-field="action">Action</th>
+                            <th class="sortable" data-field="created_at">Date - Time</th>
+                          </tr>
+                        </thead>
+                        <tbody></tbody>
+                      </table>
+                  
+                      <div class="pagination">
+                        <a href="#" class="active">1</a>
+                        <a href="#">2</a>
+                        <a href="#">3</a>
+                      </div>
+                    
+            </div>
+        </div>
+    </div>
+
+    <!-- =========== Scripts =========  -->
+    <script src="js/scripts.js"></script>
+    <script src="js/action_history.js"></script>
+
+    <!-- ====== ionicons ======= -->
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+</body>
+
+</html>
