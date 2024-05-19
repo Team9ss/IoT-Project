@@ -6,7 +6,7 @@
 ### Bước 1 : Clone dự án về máy
 
 ```
-git clone https://github.com/DuyQuandeptrai/GitIOT.git
+git clone https://github.com/Team9ss/IoT-Project.git
 ```
 
 ### Bước 2 : Cài đặt thư viện
